@@ -5,7 +5,7 @@
 ## About
 
 This is a Spring Boot starter that provides an easy-to-use command bus implementation.
-It lets you model application actions as typed commands, handle each command in a dedicated Spring bean, and dispatch commands through a single
+It lets you model application actions as typed commands, handle each `Command` in a dedicated `CommandHandler`, and dispatch commands through a single
 `CommandDispatcher`.
 
 ## Usage
