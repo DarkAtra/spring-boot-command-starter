@@ -1,0 +1,40 @@
+{
+    "branches": [
+        "main",
+        {
+            "name": "next",
+            "prerelease": true
+        }
+    ],
+    "plugins": [
+        "@semantic-release/commit-analyzer",
+        "@semantic-release/release-notes-generator",
+        [
+            "@semantic-release/exec",
+            {
+                "prepareCmd": "mvn -B -ntp versions:set -DgenerateBackupPoms=false -DnewVersion=${nextRelease.version}",
+                "publishCmd": "mvn -B -ntp -Psign-with-gpg clean deploy -DskipTests -Dgpg.passphrase=$OSSRH_GPG_SECRET_KEY_PASSWORD"
+            }
+        ],
+        [
+            "@semantic-release/git",
+            {
+                "assets": [
+                    [
+                        "**/pom.xml",
+                        "!**/target/**/*"
+                    ]
+                ]
+            }
+        ],
+        [
+            "@semantic-release/github",
+            {
+                "successComment": false,
+                "releasedLabels": false,
+                "failComment": false,
+                "failTitle": false
+            }
+        ]
+    ]
+}
