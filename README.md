@@ -108,4 +108,4 @@ class CreateUserCommandValidator : CommandValidator<CreateUserCommand, String> {
 ```
 [//]: # (@formatter:on)
 
-A command can have at most one command validator. Application startup fails if more than one handler is registered for the same command.
+A command can have at most one command validator. Application startup fails if more than one validator is registered for the same command.
