@@ -59,7 +59,7 @@ class CreateUserCommandHandler : CommandHandler<CreateUserCommand, String> {
 ```
 [//]: # (@formatter:on)
 
-Each command must have exactly one command handler. Application startup fails if more than one handler is registered for the same command.
+A command can have at most one command handler. Application startup fails if more than one handler is registered for the same command.
 
 ### Dispatch commands
 
@@ -83,3 +83,29 @@ class UserService(
 [//]: # (@formatter:on)
 
 The dispatcher resolves the matching handler and returns the typed result. If no handler is registered for a command, an `IllegalStateException` is thrown.
+
+## Validating commands
+
+The starter also supports validating commands before they are dispatched to their corresponding `CommandHandler`.
+Simply declare a `CommandValidator` for the command and throw a `CommandValidationException` if validation fails.
+Other exceptions thrown by the validator are wrapped in a`CommandValidationException` by the `CommandDispatcher`.
+
+[//]: # (@formatter:off)
+```kotlin
+import de.darkatra.springboot.CommandValidationException
+import de.darkatra.springboot.CommandValidator
+import org.springframework.stereotype.Component
+
+@Component
+class CreateUserCommandValidator : CommandValidator<CreateUserCommand, String> {
+
+    override fun validate(command: CreateUserCommand) {
+        if (command.username.isBlank()) {
+            throw CommandValidationException("Username must not be blank", command)
+        }
+    }
+}
+```
+[//]: # (@formatter:on)
+
+A command can have at most one command validator. Application startup fails if more than one handler is registered for the same command.

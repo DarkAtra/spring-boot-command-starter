@@ -13,7 +13,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner
 internal class CommandHandlerAutoConfigurationTest {
 
     @Test
-    internal fun `should successfully create command dispatcher`() {
+    internal fun `should successfully create command dispatcher and handle commands`() {
 
         ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(CommandAutoConfiguration::class.java))
@@ -80,15 +80,137 @@ internal class CommandHandlerAutoConfigurationTest {
             }
     }
 
+    @Test
+    internal fun `should fail to register more than one command validator per command`() {
+
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(CommandAutoConfiguration::class.java))
+            .withBean(CreateCommandHandler::class.java)
+            .withBean(SucceedingCreateCommandValidator::class.java)
+            .withBean(FailingCreateCommandValidator::class.java)
+            .run { context: AssertableApplicationContext ->
+                assertThat(context).hasFailed().failure
+                    .message().contains("There was an attempt to register an additional CommandValidator for Command: CreateCommand")
+            }
+    }
+
+    @Test
+    internal fun `should successfully validate and handle command`() {
+
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(CommandAutoConfiguration::class.java))
+            .withBean(CreateCommandHandler::class.java)
+            .withBean(SucceedingCreateCommandValidator::class.java)
+            .run { context: AssertableApplicationContext ->
+
+                assertThat(context).hasNotFailed()
+
+                val createCommandHandler = assertDoesNotThrow { context.getBean<CreateCommandHandler>() }
+                val createCommandValidator = assertDoesNotThrow { context.getBean<SucceedingCreateCommandValidator>() }
+
+                val commandDispatcher = assertDoesNotThrow { context.getBean<CommandDispatcher>() }
+
+                // create
+                val createCommand = CreateCommand()
+
+                val result = commandDispatcher.dispatch(createCommand)
+
+                assertThat(result).isEqualTo("test")
+                assertThat(createCommandHandler.handledCommand).isEqualTo(createCommand)
+                assertThat(createCommandValidator.validatedCommand).isEqualTo(createCommand)
+            }
+    }
+
+    @Test
+    internal fun `should fail to validate and handle command`() {
+
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(CommandAutoConfiguration::class.java))
+            .withBean(CreateCommandHandler::class.java)
+            .withBean(FailingCreateCommandValidator::class.java)
+            .run { context: AssertableApplicationContext ->
+
+                assertThat(context).hasNotFailed()
+
+                val createCommandHandler = assertDoesNotThrow { context.getBean<CreateCommandHandler>() }
+                assertDoesNotThrow { context.getBean<FailingCreateCommandValidator>() }
+
+                val commandDispatcher = assertDoesNotThrow { context.getBean<CommandDispatcher>() }
+
+                // create
+                val createCommand = CreateCommand()
+
+                val commandValidationException = assertThrows<CommandValidationException> {
+                    commandDispatcher.dispatch(createCommand)
+                }
+
+                assertThat(commandValidationException.message).isEqualTo("Simulated for tests")
+                assertThat(commandValidationException.command).isEqualTo(createCommand)
+                assertThat(createCommandHandler.handledCommand).isNull()
+            }
+    }
+
+    @Test
+    internal fun `should fail validation and always return a CommandValidationException`() {
+
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(CommandAutoConfiguration::class.java))
+            .withBean(CreateCommandHandler::class.java)
+            .withBean(NonCommandValidationExceptionFailingCreateCommandValidator::class.java)
+            .run { context: AssertableApplicationContext ->
+
+                assertThat(context).hasNotFailed()
+
+                val createCommandHandler = assertDoesNotThrow { context.getBean<CreateCommandHandler>() }
+                assertDoesNotThrow { context.getBean<NonCommandValidationExceptionFailingCreateCommandValidator>() }
+
+                val commandDispatcher = assertDoesNotThrow { context.getBean<CommandDispatcher>() }
+
+                // create
+                val createCommand = CreateCommand()
+
+                val commandValidationException = assertThrows<CommandValidationException> {
+                    commandDispatcher.dispatch(createCommand)
+                }
+
+                assertThat(commandValidationException.message).isEqualTo("Exception validating Command: CreateCommand")
+                assertThat(commandValidationException.command).isEqualTo(createCommand)
+                assertThat(createCommandHandler.handledCommand).isNull()
+            }
+    }
+
     class CreateCommand : Command<String>
 
     class CreateCommandHandler : CommandHandler<CreateCommand, String> {
 
-        lateinit var handledCommand: CreateCommand
+        var handledCommand: CreateCommand? = null
 
         override fun handle(command: CreateCommand): String {
             handledCommand = command
             return "test"
+        }
+    }
+
+    class SucceedingCreateCommandValidator : CommandValidator<CreateCommand, String> {
+
+        lateinit var validatedCommand: CreateCommand
+
+        override fun validate(command: CreateCommand) {
+            validatedCommand = command
+        }
+    }
+
+    class FailingCreateCommandValidator : CommandValidator<CreateCommand, String> {
+
+        override fun validate(command: CreateCommand) {
+            throw CommandValidationException("Simulated for tests", command)
+        }
+    }
+
+    class NonCommandValidationExceptionFailingCreateCommandValidator : CommandValidator<CreateCommand, String> {
+
+        override fun validate(command: CreateCommand) {
+            throw IllegalStateException("Simulated for tests")
         }
     }
 

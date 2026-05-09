@@ -46,7 +46,7 @@
 
     <groupId>de.darkatra.springboot</groupId>
     <artifactId>spring-boot-command-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.1.0</version>
 
     <name>${project.artifactId}</name>
     <description>A spring boot starter that provides an easy-to-use command bus implementation.</description>
