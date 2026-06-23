@@ -21,7 +21,7 @@ jobs:
     name: Verify
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
@@ -48,7 +48,7 @@ jobs:
       new-release-published: ${{ steps.semantic-release.outputs.new_release_published }}
       new-release-version: ${{ steps.semantic-release.outputs.new_release_version }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
@@ -82,7 +82,7 @@ jobs:
     needs: release
     if: needs.release.outputs.new-release-published == 'true'
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0 # Shallow clones should be disabled for a better relevancy of analysis
 
